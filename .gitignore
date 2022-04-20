@@ -129,4 +129,7 @@ dmypy.json
 .pyre/
 
 # Files continaing login credentials and api keys.
-constants.py
+secrets.py
+
+#log files
+CTC-Custom-Integration.log

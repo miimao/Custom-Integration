@@ -2,6 +2,7 @@ import requests
 import json
 import constants
 import re
+import logging
 
 # Rexex exspresion to find an ip address or mac address if we need to pull form a large string.
 regex_ip = re.compile(
@@ -76,7 +77,7 @@ def add_domotz_id_to_config(domotz_id, config_id):
         headers=constants.headers_cw,
         data=f"{patch_data}",
     )
-    print(f"Configuration:{config_id} - Added the Domotz ID ({domotz_id})")
+    logging.info(f"Configuration:{config_id} - Added the Domotz ID ({domotz_id})")
 
 
 # add a configuration to a ticket/s if it does not already have one.
@@ -93,8 +94,8 @@ def add_configuration_to_ticket(ticket):
         if ticket_configurations == []:
             config_set = False
             config_set_using = None
-            print(
-                f"\nTicket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
+            logging.info(
+                f"Ticket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
             )
             # Get the initial note so we can parse it for information we can use to find the configuration.
             ticket_note = requests.get(
@@ -154,31 +155,31 @@ def add_configuration_to_ticket(ticket):
                                 headers=constants.headers_cw,
                                 data=f"{configuration_id}",
                             )
-                            print(
+                            logging.info(
                                 f"Ticket:{ticket_id} - Set Configuration (ID:{configuration_id['id']}) ({config_post_response.json()['_info']['name']}), Based on: {i} ({regex_parse[i]})"
                             )
                             config_set = True
                             config_set_using = i
                             break
                         else:
-                            print(
+                            logging.info(
                                 f"Ticket:{ticket_id} - Unable to find a configuration Based on the {i}: {regex_parse[i]}"
                             )
                     except:
-                        print(f"An exception occurred. ({i}) Ticket ID {ticket_id}")
+                        logging.warning(f"An exception occurred. ({i}) Ticket ID {ticket_id}")
                     # add the domotz id to the config if it finds a domotz id for the config
             if (
                 config_set == True
                 and regex_parse["domotz_id"] != None
                 and config_set_using != "domotz_id"
             ):
-                print(
+                logging.info(
                     f"Ticket:{ticket_id} - Configuration found but not using Domotz ID, Attempting to add the Domotz ID to Configuration."
                 )
                 add_domotz_id_to_config(
                     regex_parse["domotz_id"], configuration_id["id"]
                 )
         else:
-            print(
-                f"\nTicket:{ticket_id} for ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})"
+            logging.info(
+                f"Ticket:{ticket_id} ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})"
             )
