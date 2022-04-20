@@ -12,7 +12,7 @@ test_ticket = cwmanage_api_functions.get_testing_ticket()
 open_tickets = cwmanage_api_functions.get_open_domotz_tickets()
 domotz_agents = domotz_api_functions.get_all_domotz_agents_id()
 checked_tickets = []
-print(open_tickets)
+# print(open_tickets)
 
 
 # print(domotz_agents)

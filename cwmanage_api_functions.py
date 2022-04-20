@@ -43,6 +43,19 @@ def get_testing_ticket():
     tickets_data = requests.get(headers=constants.headers_cw,url=url,params=params)
     return tickets_data.json()
 
+#Add a domotz id to a coniguration
+def add_domotz_id_to_config(domotz_id,config_id):
+    patch_data = [
+        {
+            "op": "replace",
+            "path": "/customFields",
+            "value": [{"id":"12","value":domotz_id}]
+        }
+    ]
+    config_patch_response = requests.patch(url=f"{constants.cw_manage_url}/company/configurations/{config_id}",headers=constants.headers_cw,data=f"{patch_data}")
+    print(f"Configuration:{config_id} - Added the Domotz ID ({domotz_id})")
+
+
 #add a configuration to a ticket/s if it does not already have one.
 def add_configuration_to_ticket(ticket):
     for ticket in ticket:
@@ -53,6 +66,7 @@ def add_configuration_to_ticket(ticket):
         #Checking to see if we already have a configuration assigned to the ticket.
         ticket_configurations = requests.get(url=ticket['_info']['configurations_href'],headers=constants.headers_cw).json()
         if ticket_configurations == []:
+            config_set = False
             print(f"\nTicket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one.")
             #Get the initial note so we can parse it for information we can use to find the configuration.
             ticket_note = requests.get(headers=constants.headers_cw, url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/allNotes", params={"conditions":"noteType='TicketNote'","orderBy":"id asc","pageSize":"1","fields":"text"}).json()[0]["text"]
@@ -84,11 +98,16 @@ def add_configuration_to_ticket(ticket):
                         if configuration_id != []:
                             configuration_id = configuration_id[0]
                             config_post_response = requests.post(url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/configurations",headers=constants.headers_cw,data=f"{configuration_id}")
-                            print(f"Set Configuration - ID:{configuration_id['id']} ({config_post_response.json()['_info']['name']}) for Ticket: {ticket_id}, Based on: {i} ({regex_parse[i]})")
+                            print(f"Ticket:{ticket_id} - Set Configuration (ID:{configuration_id['id']}) ({config_post_response.json()['_info']['name']}), Based on: {i} ({regex_parse[i]})")
+                            config_set = True
                             break
                         else:
                             print(f"Ticket:{ticket_id} - Unable to find a configuration Based on the {i}: {regex_parse[i]}")
                     except:
                         print(f"An exception occurred. ({i}) Ticket ID {ticket_id}")
+                    #add the domotz id to the config
+            if config_set == True and regex_parse['domotz_id'] != '':
+                print(f"Ticket:{ticket_id} - Configuration found but not using Domotz ID, Attempting to add the Domotz ID to Configuration.")
+                add_domotz_id_to_config(regex_parse["domotz_id"],configuration_id["id"])
         else:
             print(f"\nTicket:{ticket_id} for ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})")
