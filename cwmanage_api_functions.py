@@ -42,6 +42,20 @@ def get_testing_ticket():
         # "conditions":f"board/name='alerts' AND enteredBy='DomotzAPI' AND id={ticket_id}",
         "conditions": f"board/name='alerts' AND enteredBy='DomotzAPI'",
         "orderBy": "id desc",
+        "pageSize": "10",
+    }
+    tickets_data = requests.get(headers=constants.headers_cw, url=url, params=params)
+    return tickets_data.json()
+
+
+def get_testing_ticket_loop(last_ticket):
+    url = constants.cw_manage_url + "/service/tickets"
+    # ticket_id = 30705
+    ticket_id = last_ticket
+    params = {
+        # "conditions":f"board/name='alerts' AND enteredBy='DomotzAPI' AND id={ticket_id}",
+        "conditions": f"board/name='alerts' AND enteredBy='DomotzAPI' AND id<{ticket_id}",
+        "orderBy": "id desc",
         "pageSize": "1000",
     }
     tickets_data = requests.get(headers=constants.headers_cw, url=url, params=params)
@@ -78,6 +92,7 @@ def add_configuration_to_ticket(ticket):
         ).json()
         if ticket_configurations == []:
             config_set = False
+            config_set_using = None
             print(
                 f"\nTicket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
             )
@@ -143,6 +158,7 @@ def add_configuration_to_ticket(ticket):
                                 f"Ticket:{ticket_id} - Set Configuration (ID:{configuration_id['id']}) ({config_post_response.json()['_info']['name']}), Based on: {i} ({regex_parse[i]})"
                             )
                             config_set = True
+                            config_set_using = i
                             break
                         else:
                             print(
@@ -150,8 +166,12 @@ def add_configuration_to_ticket(ticket):
                             )
                     except:
                         print(f"An exception occurred. ({i}) Ticket ID {ticket_id}")
-                    # add the domotz id to the config
-            if config_set == True and regex_parse["domotz_id"] != "":
+                    # add the domotz id to the config if it finds a domotz id for the config
+            if (
+                config_set == True
+                and regex_parse["domotz_id"] != None
+                and config_set_using != "domotz_id"
+            ):
                 print(
                     f"Ticket:{ticket_id} - Configuration found but not using Domotz ID, Attempting to add the Domotz ID to Configuration."
                 )
