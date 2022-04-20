@@ -12,7 +12,7 @@ regex_mac = re.compile(r"(?:[0-9a-fA-F]:?){12}")
 regex_device_name = re.compile(r"(?<=Device Name: ).*")
 regex_domotz_device_id = re.compile(r"/devices/(.*?)\?notify=ticketing")
 
-# get a dictionary with cw manage bopard names and there id's
+# Get a dictionary with cw manage bopard names and there id's
 def get_all_cw_manage_board_id():
     board_ids = {}
     url = constants.cw_manage_url + "/service/boards"
@@ -22,7 +22,19 @@ def get_all_cw_manage_board_id():
     return board_ids
 
 
-# get a list of tickets that are created by the domotz api with the conditions of not being closed, organaized in desc order
+# Get a dictionary of all configurations that contain a domotz id
+def get_all_configs_with_domotz_id():
+    url = constants.cw_manage_url + "/company/configurations"
+    params = {
+        "customFieldConditions": "caption='Domotz ID' AND value!=0",
+        "orderBy": "id desc",
+        "pageSize": "1000",
+    }
+    config_data = requests.get(headers=constants.headers_cw, url=url, params=params)
+    return config_data.json()
+
+
+# Get a list of tickets that are created by the domotz api with the conditions of not being closed, organaized in desc order
 def get_open_domotz_tickets():
     url = constants.cw_manage_url + "/service/tickets"
     params = {
@@ -166,7 +178,9 @@ def add_configuration_to_ticket(ticket):
                                 f"Ticket:{ticket_id} - Unable to find a configuration Based on the {i}: {regex_parse[i]}"
                             )
                     except:
-                        logging.warning(f"An exception occurred. ({i}) Ticket ID {ticket_id}")
+                        logging.warning(
+                            f"An exception occurred. ({i}) Ticket ID {ticket_id}"
+                        )
                     # add the domotz id to the config if it finds a domotz id for the config
             if (
                 config_set == True
