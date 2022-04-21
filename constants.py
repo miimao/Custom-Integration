@@ -15,7 +15,7 @@ def generate_cw_token(Company_ID, Public_Key, Private_Key):
     return token
 
 
-cw_manage_url = "https://api-na.myconnectwise.net/v2021_3/apis/3.0"
+cw_manage_url = "https://api-na.myconnectwise.net/v2022_1/apis/3.0"
 company_id = secrets.company_id
 cw_manage_public = secrets.cw_manage_public
 cw_manage_private = secrets.cw_manage_private
