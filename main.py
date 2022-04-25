@@ -23,7 +23,7 @@ checked_tickets = []
 # print(open_tickets)
 
 test_configs = cwmanage_api_functions.get_all_configs_with_domotz_id()
-domotz_api_functions.find_missing_domotz_devices(test_configs)
+domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
 
 
 # # print(domotz_agents)

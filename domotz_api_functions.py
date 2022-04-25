@@ -24,7 +24,7 @@ def get_all_devices_from_domotz_agent(agent_id):
 
 
 # Make a list of all domotz devices that do not currently have a cwmanage configuration
-def get_noconfig_domotz_devices(list_of_cw_configurations):
+def get_nocwconfig_domotz_devices(list_of_cw_configurations):
     domotz_agents = get_all_domotz_agents_id()
     domotz_devices = []
     domotz_devices_no_config = []
