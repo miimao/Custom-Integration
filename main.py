@@ -23,7 +23,9 @@ checked_tickets = []
 # print(open_tickets)
 
 test_configs = cwmanage_api_functions.get_all_configs_with_domotz_id()
-domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
+devices = domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
+print(devices[0])
+domotz_api_functions.post_domotz_device_to_cwmanage_as_config(devices[0])
 
 
 # # print(domotz_agents)
