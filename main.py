@@ -19,13 +19,16 @@ logging.basicConfig(
 # test_tickets = cwmanage_api_functions.get_testing_ticket()
 open_tickets = cwmanage_api_functions.get_open_domotz_tickets()
 domotz_agents = domotz_api_functions.get_all_domotz_agents_id()
+cw_companys_ids = cwmanage_api_functions.get_all_cw_manage_company_id()
 checked_tickets = []
+# print(json.dumps(cw_companys_ids,indent=4))
 # print(open_tickets)
 
 test_configs = cwmanage_api_functions.get_all_configs_with_domotz_id()
 devices = domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
+# print(test_configs[0])
 print(devices[0])
-domotz_api_functions.post_domotz_device_to_cwmanage_as_config(devices[0])
+# cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(devices[0])
 
 
 # # print(domotz_agents)

@@ -16,11 +16,25 @@ regex_domotz_device_id = re.compile(r"/devices/(.*?)\?notify=ticketing")
 def get_all_cw_manage_board_id():
     board_ids = {}
     url = constants.cw_manage_url + "/service/boards"
-    boards_info = requests.get(headers=constants.headers_cw, url=url).json()
+    params = {
+    "pageSize": "1000",
+    }
+    boards_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
     for board in boards_info:
         board_ids[board["name"]] = board["id"]
     return board_ids
 
+# Get a dictionary with cw manage bopard names and there id's
+def get_all_cw_manage_company_id():
+    company_ids = {}
+    url = constants.cw_manage_url + "/company/companies"
+    params = {
+    "pageSize": "1000",
+    }
+    company_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+    for company in company_info:
+        company_ids[company["name"]] = company["id"]
+    return company_ids
 
 # Get a dictionary of all configurations that contain a domotz id
 def get_all_configs_with_domotz_id():
@@ -197,3 +211,52 @@ def add_configuration_to_ticket(ticket):
             logging.info(
                 f"Ticket:{ticket_id} ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})"
             )
+
+
+#take a domotz device and convert it into json for a post request to cw manage
+company_ids = get_all_cw_manage_company_id() #lookuptable for company names to ids
+def post_domotz_device_to_cwmanage_as_config(domotz_device):
+    global company_ids
+    constants.domotz_type_to_cwmanage_type
+
+    payload = {
+    "name": f"{domotz_device['display_name']}",
+    "type": {
+        "id": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['id']}",
+        "name": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['name']}"
+    },
+    "status": {
+        "id": 2,
+    },
+    "company": {
+        "id": f"{company_ids[domotz_device['agent_name']]}",
+        "name": f"{domotz_device['agent_name']}"
+    },
+    "modelNumber": f"{domotz_device['model']}",
+    # "installationDate": f"{domotz_device['first_seen_on']}",
+    "macAddress": f"{domotz_device['hw_address']}",
+    "ipAddress": f"{domotz_device['ip_addresses'][0]}",
+    "vendor": {
+        "name": f"{domotz_device['vendor']}",
+    },
+    "activeFlag": True,
+    "sla": {
+        "name": f"{domotz_device['details']['zone']} Device"
+    },
+    "displayVendorFlag": True,
+    "showRemoteFlag": True,
+    "showAutomateFlag": True,
+    "needsRenewalFlag": True,
+    "customFields": [
+        {
+            "id": 12,
+            "caption": "Domotz ID",
+            "type": "Number",
+            "entryMethod": "EntryField",
+            "numberOfDecimals": 0,
+            "value": domotz_device['id']
+        }
+    ]
+    }
+    post_config_response = requests.post(url=f'{constants.cw_manage_url}/company/configurations',headers=constants.headers_cw, json=payload)
+    print(post_config_response.json())
