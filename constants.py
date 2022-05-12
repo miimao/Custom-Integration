@@ -360,8 +360,8 @@ domotz_type_to_cwmanage_type ={
         },
     67: #Controller
         {
-        "id": 68,
-        "name": "Automation - Controller"
+        "id": 91,
+        "name": "Access Control - Panel"
         },
     68: #Scale
         {

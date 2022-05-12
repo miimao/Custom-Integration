@@ -24,6 +24,18 @@ def get_all_cw_manage_board_id():
         board_ids[board["name"]] = board["id"]
     return board_ids
 
+# Get a dictionary with cw manage Manufacturers and there id's
+def get_all_cw_manage_manufacturer_id():
+    vendor_ids = {}
+    url = constants.cw_manage_url + "/procurement/manufacturers"
+    params = {
+    "pageSize": "1000",
+    }
+    vendor_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+    for vendor in vendor_info:
+        vendor_ids[vendor["name"]] = vendor["id"]
+    return vendor_ids
+
 # Get a dictionary with cw manage bopard names and there id's
 def get_all_cw_manage_company_id():
     company_ids = {}
@@ -215,15 +227,52 @@ def add_configuration_to_ticket(ticket):
 
 #take a domotz device and convert it into json for a post request to cw manage
 company_ids = get_all_cw_manage_company_id() #lookuptable for company names to ids
+vendor_ids = get_all_cw_manage_manufacturer_id()
 def post_domotz_device_to_cwmanage_as_config(domotz_device):
+    print(type(domotz_device))
     global company_ids
+    global vendor_ids
     constants.domotz_type_to_cwmanage_type
+    # a few fields might not be in the domotz device json so we can account for these here to avoid errors
+    try: 
+        modelNumber = domotz_device['user_data']['model']
+    except KeyError:
+        try:
+            modelNumber = domotz_device['model']
+        except:
+            modelNumber = ''
+    
+    try:
+        hw_address = domotz_device['hw_address']
+    except:
+        hw_address = ''
+
+    try:
+        manufacturer_id = vendor_ids[domotz_device['vendor']]
+    except:
+        manufacturer_id = ''
+
+    if domotz_device['details']['zone'] != None:
+        try:
+            sla = f"{domotz_device['details']['zone']} Device"
+        except:
+            sla = ''
+    else:
+        sla = ''
+    
+    try: 
+        type_id = constants.domotz_type_to_cwmanage_type[domotz_device['user_data']['type']]['id']
+    except KeyError:
+        try:
+            type_id = constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['id']
+        except:
+            type_id = ''
 
     payload = {
     "name": f"{domotz_device['display_name']}",
     "type": {
-        "id": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['id']}",
-        "name": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['name']}"
+        "id": f"{type_id}",
+        # "name": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['name']}"
     },
     "status": {
         "id": 2,
@@ -232,21 +281,24 @@ def post_domotz_device_to_cwmanage_as_config(domotz_device):
         "id": f"{company_ids[domotz_device['agent_name']]}",
         "name": f"{domotz_device['agent_name']}"
     },
-    "modelNumber": f"{domotz_device['model']}",
+    "modelNumber": f"{modelNumber}",
     # "installationDate": f"{domotz_device['first_seen_on']}",
-    "macAddress": f"{domotz_device['hw_address']}",
+    "macAddress": f"{hw_address}",
     "ipAddress": f"{domotz_device['ip_addresses'][0]}",
     "vendor": {
         "name": f"{domotz_device['vendor']}",
     },
     "activeFlag": True,
     "sla": {
-        "name": f"{domotz_device['details']['zone']} Device"
+        "name": f"{sla}"
     },
     "displayVendorFlag": True,
     "showRemoteFlag": True,
     "showAutomateFlag": True,
-    "needsRenewalFlag": True,
+    # "needsRenewalFlag": True,
+    "manufacturer": {
+        "id": manufacturer_id,
+    },
     "customFields": [
         {
             "id": 12,

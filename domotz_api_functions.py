@@ -55,7 +55,7 @@ def get_nocwconfig_domotz_devices(list_of_cw_configurations):
     list_configs_domotz_id_only = []
     for config in list_filtered_configs:
         list_configs_domotz_id_only.append(config['domotz_id'])
-    print(list_configs_domotz_id_only)
+    # print(list_configs_domotz_id_only)
     # get a list of only devices that we cannot find a matching id for in and remove any device in this list that is not marked as "importance": "VITAL"
     domotz_devices_no_config = list(
         filter(

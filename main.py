@@ -23,12 +23,28 @@ cw_companys_ids = cwmanage_api_functions.get_all_cw_manage_company_id()
 checked_tickets = []
 # print(json.dumps(cw_companys_ids,indent=4))
 # print(open_tickets)
-
 test_configs = cwmanage_api_functions.get_all_configs_with_domotz_id()
 devices = domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
 # print(test_configs[0])
-print(devices[0])
-# cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(devices[0])
+print(len(devices))
+# print(devices[0:2])
+for device in devices[:5]:
+    # print(device)
+    # print(device['user_data']['model'])
+    cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(device)
+
+# cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(devices[0:2])
+# for device in devices:
+#     url = constants.cw_manage_url + "/company/configurations"
+#     params = {
+#         "conditions": f"name='{device['display_name']}'",
+#     }
+#     config_data = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+#     print(config_data)
+#     print(len(config_data))
+#     if config_data != [] and len(config_data) <= 1:
+#         print(f'yes')
+#         cwmanage_api_functions.add_domotz_id_to_config(device['id'],config_data[0]['id'])
 
 
 # # print(domotz_agents)
