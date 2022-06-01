@@ -29,7 +29,7 @@ devices = domotz_api_functions.get_nocwconfig_domotz_devices(test_configs)
 print(len(devices))
 # print(devices[0:2])
 for device in devices:
-    # print(device)
+    print(device)
     # print(device['user_data']['model'])
     cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(device)
 

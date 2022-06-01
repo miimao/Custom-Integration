@@ -266,7 +266,7 @@ def post_domotz_device_to_cwmanage_as_config(domotz_device):
         try:
             type_id = constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['id']
         except:
-            type_id = ''
+            type_id = 55
 
     payload = {
     "name": f"{domotz_device['display_name']}",
