@@ -44,7 +44,10 @@ def get_nocwconfig_domotz_devices(list_of_cw_configurations):
     for config in list_of_cw_configurations:
         filtered_config = {}
         filtered_config["cw_config_id"] = config["id"]
-        filtered_config["domotz_agent_id"] = domotz_agent[config["company"]["name"]]
+        try:
+            filtered_config["domotz_agent_id"] = domotz_agent[config["company"]["name"]]
+        except KeyError:
+            filtered_config["domotz_agent_id"] = None
         filtered_config["domotz_id"] = int(
             list(
                 filter(
