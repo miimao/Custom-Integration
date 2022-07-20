@@ -5,6 +5,8 @@ import re
 import constants
 import logging
 
+import cwmanage_api_functions
+
 # get a dictionary of all active domotz agents and there id's
 def get_all_domotz_agents_id():
     agents_ids = {}
@@ -31,8 +33,9 @@ def get_all_devices_from_domotz_agent(agent_id):
 
 
 # Make a list of all domotz devices that do not currently have a cwmanage configuration
-def get_nocwconfig_domotz_devices(list_of_cw_configurations):
+def get_nocwconfig_domotz_devices():
     global domotz_agent
+    list_of_cw_configurations = cwmanage_api_functions.get_all_configs_with_domotz_id()
     domotz_devices = []
     domotz_devices_no_config = []
     list_filtered_configs = []

@@ -1,3 +1,5 @@
+from turtle import pos
+from urllib import response
 import requests
 import json
 import constants
@@ -229,7 +231,7 @@ def add_configuration_to_ticket(ticket):
 company_ids = get_all_cw_manage_company_id() #lookuptable for company names to ids
 vendor_ids = get_all_cw_manage_manufacturer_id()
 def post_domotz_device_to_cwmanage_as_config(domotz_device):
-    print(type(domotz_device))
+    logging.info(f"Creating new CW Manage Configuration for Domotz Device: {domotz_device['display_name']} (ID: {domotz_device['id']}) - {domotz_device['agent_name']} (ID: {domotz_device['agent_id']}")
     global company_ids
     global vendor_ids
     constants.domotz_type_to_cwmanage_type
@@ -310,5 +312,9 @@ def post_domotz_device_to_cwmanage_as_config(domotz_device):
         }
     ]
     }
-    post_config_response = requests.post(url=f'{constants.cw_manage_url}/company/configurations',headers=constants.headers_cw, json=payload)
-    print(post_config_response.json())
+    try:
+        post_config_response = requests.post(url=f'{constants.cw_manage_url}/company/configurations',headers=constants.headers_cw, json=payload)
+        response_json = post_config_response.json()
+        logging.info(f"New CW Manage Configuration Created - ID: {response_json['id']} Based on Domotz Device: {domotz_device['display_name']} (ID: {domotz_device['id']}) - {domotz_device['agent_name']} (ID: {domotz_device['agent_id']}")
+    except KeyError as e:
+        logging.error("Unable to post Config")
