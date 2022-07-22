@@ -1,3 +1,4 @@
+from ast import Return
 from xml import dom
 import requests
 import json
@@ -19,7 +20,20 @@ def get_all_domotz_agents_id():
 
 domotz_agent = get_all_domotz_agents_id()
 #this is so stupid why are you doing this there is a better way and you know it
+# Flip dictionary keys and values
 agent_domotz = vocab_tage = {value: key for key, value in domotz_agent.items()}
+
+# Get Specific Domotz Device
+def get_domotz_device(agent_id,device_id):
+    url = constants.domotz_url + f"/agent/{agent_id}/device/{device_id}"
+    device = requests.get(url=url, headers=constants.headers_domotz)
+    if device.status_code == 404:
+        logging.error(f"unable to find - AgentID: {agent_id}, DeviceID: {device}. Statues Code: {device.status_code}. A 404 Satues Code usualy means this device was deleted.")   
+    if device.status_code!=200:
+        logging.error(f"unable to find - AgentID: {agent_id}, DeviceID: {device}. Statues Code: {device.status_code}")
+        return None
+    else:
+        return device.json()
 
 # Get all Devices listed in a given Domotz Agent
 def get_all_devices_from_domotz_agent(agent_id):

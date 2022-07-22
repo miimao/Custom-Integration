@@ -314,6 +314,6 @@ def post_domotz_device_to_cwmanage_as_config(domotz_device):
     try:
         post_config_response = requests.post(url=f'{constants.cw_manage_url}/company/configurations',headers=constants.headers_cw, json=payload)
         response_json = post_config_response.json()
-        logging.info(f"New CW Manage Configuration Created - ID: {response_json['id']} Based on Domotz Device: {domotz_device['display_name']} (ID: {domotz_device['id']}) - {domotz_device['agent_name']} (ID: {domotz_device['agent_id']}")
+        logging.info(f"CW Manage Configuration Created - ID: {response_json['id']} Based on Domotz Device: (ID: {domotz_device['id']}) - {domotz_device['agent_name']}")
     except KeyError as e:
         logging.error("Unable to post Config")
