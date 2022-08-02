@@ -24,50 +24,66 @@ logging.basicConfig(
 
 
 domotz_agents = domotz_api_functions.get_all_domotz_agents_id()
-print(domotz_agents)
+
 # Look for changes in the CW config and update according to the information we find in Domotz
 configurations = cwmanage_api_functions.get_all_configs_with_domotz_id()
+domotz_devices = domotz_api_functions.get_all_devices()
+# configurations = [cwmanage_api_functions.get_config(1276)]
 # Keys translations from CWManage config to Domotz Device json data
+changed_configs = []
 sync_checks = {
-    "name":"display_name",
-    "modelNumber":["model",['user_data','model']],
+    "name": "display_name",
+    "modelNumber": ["model", ["user_data", "model"]],
     # "modelNumber":"model",
-    "macAddress":"hw_address",
-    "ipAddress":"ip_addresses",
+    "macAddress": "hw_address",
+    "ipAddress": "ip_addresses",
 }
 for config in configurations:
-    if config['company']['name'] in domotz_agents.keys():
-        domotz_agent_id = domotz_agents[config['company']['name']]
-        for customField in config['customFields']:
-            if customField['caption'] == "Domotz ID":
-                domotz_device_id = (int(customField['value']))
-        logging.info(f"Syncing CW configureation ({config['id']}) for Domotz Device - Agent: {domotz_agent_id}, ID: {domotz_device_id}")
-        device = (domotz_api_functions.get_domotz_device(domotz_agent_id,domotz_device_id))
+    config_changes = {}
+    if config["company"]["name"] in domotz_agents.keys():
+        domotz_agent_id = domotz_agents[config["company"]["name"]]
+        for customField in config["customFields"]:
+            if customField["caption"] == "Domotz ID":
+                domotz_device_id = int(customField["value"])
+        device = next(
+            (
+                domotz_device
+                for domotz_device in domotz_devices
+                if domotz_device["id"] == domotz_device_id
+                and domotz_device["agent_id"] == domotz_agent_id
+            ),
+            None,
+        )
         if device != None:
             for key in sync_checks:
-                try:
-                    if type(sync_checks[key]) != list and sync_checks[key] in device.keys():
-                        if config[key] == device[sync_checks[key]]:
-                            print(True)
-                        else:
-                            print(False)
-                    else:
-                        for i in sync_checks[key]:
-                            if type(i) != list and i in device.keys():
-                                if config[key] == device[i]:
-                                    print(True)
-                                else:
-                                    print(False)
-                            elif type(i) == list and i[0] in device.keys() and i[1] in device[i[0]].keys():
-                                if config[key] == device[i[0]][i[1]]:
-                                    print(True)
-                                else:
-                                    print(False)
-                            else:
-                                pass
-
-                except:
-                    print("Failed Some How 1")
-                    pass
+                if type(sync_checks[key]) != list and sync_checks[key] in device.keys():
+                    if type(device[sync_checks[key]]) == list:
+                        if config[key] != device[sync_checks[key]][0]:
+                            config_changes[key] = device[sync_checks[key]][0]
+                    elif config[key] != device[sync_checks[key]]:
+                        config_changes[key] = device[sync_checks[key]]
+                else:
+                    for i in sync_checks[key]:
+                        if type(i) != list and i in device.keys():
+                            if config[key] != device[i]:
+                                config_changes[key] = device[i]
+                        elif (
+                            type(i) == list
+                            and i[0] in device.keys()
+                            and i[1] in device[i[0]].keys()
+                        ):
+                            if config[key] != device[i[0]][i[1]]:
+                                config_changes[key] = device[i[0]][i[1]]
     else:
-        logging.error(f"Configuration {config['id']}: {config['company']['name']} not found in list of domotz agents")
+        logging.error(
+            f"Device Sync:CW Config:{config['id']} - {config['company']['name']} not found in list of domotz agents"
+        )
+    if config_changes != {}:
+        logging.info(
+            f"Device Sync:CW Config:{config['id']} - Changed Detected - DomotzAgent: {domotz_agent_id}, DomotzID: {domotz_device_id}"
+        )
+        changed_configs.append(config_changes)
+        for i in config_changes:
+            logging.info(
+                f"Device Sync:CW Config:{config['id']} - {i}: {config[i]}  -->  {config_changes[i]}"
+            )

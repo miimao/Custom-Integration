@@ -40,10 +40,8 @@ for i in range(attempts_before_exception_raise):
             # Add these tickets to the list of already proccessed tickets
             checked_tickets.extend(open_tickets)
     except KeyError as e:
-        if i < attempts_before_exception_raise -1: #i is zero indexed
+        if i < attempts_before_exception_raise - 1:  # i is zero indexed
             continue
         else:
             raise
         break
-
-

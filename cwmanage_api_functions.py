@@ -18,36 +18,53 @@ def get_all_cw_manage_board_id():
     board_ids = {}
     url = constants.cw_manage_url + "/service/boards"
     params = {
-    "pageSize": "1000",
+        "pageSize": "1000",
     }
-    boards_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+    boards_info = requests.get(
+        headers=constants.headers_cw, url=url, params=params
+    ).json()
     for board in boards_info:
         board_ids[board["name"]] = board["id"]
     return board_ids
+
 
 # Get a dictionary with cw manage Manufacturers and there id's
 def get_all_cw_manage_manufacturer_id():
     vendor_ids = {}
     url = constants.cw_manage_url + "/procurement/manufacturers"
     params = {
-    "pageSize": "1000",
+        "pageSize": "1000",
     }
-    vendor_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+    vendor_info = requests.get(
+        headers=constants.headers_cw, url=url, params=params
+    ).json()
     for vendor in vendor_info:
         vendor_ids[vendor["name"]] = vendor["id"]
     return vendor_ids
+
 
 # Get a dictionary with cw manage bopard names and there id's
 def get_all_cw_manage_company_id():
     company_ids = {}
     url = constants.cw_manage_url + "/company/companies"
     params = {
-    "pageSize": "1000",
+        "pageSize": "1000",
     }
-    company_info = requests.get(headers=constants.headers_cw, url=url, params=params).json()
+    company_info = requests.get(
+        headers=constants.headers_cw, url=url, params=params
+    ).json()
     for company in company_info:
         company_ids[company["name"]] = company["id"]
     return company_ids
+
+
+# Get a dictionary of all configurations that contain a domotz id
+def get_config(config_id):
+    url = constants.cw_manage_url + f"/company/configurations/{config_id}"
+    params = {}
+    config_data = requests.get(headers=constants.headers_cw, url=url, params=params)
+    return config_data.json()
+
 
 # Get a dictionary of all configurations that contain a domotz id
 def get_all_configs_with_domotz_id():
@@ -74,10 +91,10 @@ def get_open_domotz_tickets():
 
 
 # Pull a specific ticket/s for testing (This should not be used unless for debuging)
-def get_testing_ticket():
+def get_ticket(ticket_number):
     url = constants.cw_manage_url + "/service/tickets"
     # ticket_id = 30705
-    ticket_id = 30441
+    ticket_id = ticket_number
     params = {
         # "conditions":f"board/name='alerts' AND enteredBy='DomotzAPI' AND id={ticket_id}",
         "conditions": f"board/name='alerts' AND enteredBy='DomotzAPI'",
@@ -137,16 +154,19 @@ def add_configuration_to_ticket(ticket):
                 f"Ticket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
             )
             # Get the initial note so we can parse it for information we can use to find the configuration.
-            ticket_note = requests.get(
-                headers=constants.headers_cw,
-                url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/allNotes",
-                params={
-                    "conditions": "noteType='TicketNote'",
-                    "orderBy": "id asc",
-                    "pageSize": "1",
-                    "fields": "text",
-                },
-            ).json()[0]["text"]
+            try:
+                ticket_note = requests.get(
+                    headers=constants.headers_cw,
+                    url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/allNotes",
+                    params={
+                        "conditions": "noteType='TicketNote'",
+                        "orderBy": "id asc",
+                        "pageSize": "1",
+                        "fields": "text",
+                    },
+                ).json()[0]["text"]
+            except:
+                ticket_note = ""
             regex_parse = {}
             try:
                 regex_parse["domotz_id"] = re.search(
@@ -226,94 +246,106 @@ def add_configuration_to_ticket(ticket):
             )
 
 
-#take a domotz device and convert it into json for a post request to cw manage
-company_ids = get_all_cw_manage_company_id() #lookuptable for company names to ids
+# take a domotz device and convert it into json for a post request to cw manage
+company_ids = get_all_cw_manage_company_id()  # lookuptable for company names to ids
 vendor_ids = get_all_cw_manage_manufacturer_id()
+
+
 def post_domotz_device_to_cwmanage_as_config(domotz_device):
-    logging.info(f"Creating new CW Manage Configuration for Domotz Device: {domotz_device['display_name']} (ID: {domotz_device['id']}) - {domotz_device['agent_name']} (ID: {domotz_device['agent_id']}")
+    logging.info(
+        f"Creating new CW Manage Configuration for Domotz Device: {domotz_device['display_name']} (ID: {domotz_device['id']}) - {domotz_device['agent_name']} (ID: {domotz_device['agent_id']}"
+    )
     global company_ids
     global vendor_ids
     constants.domotz_type_to_cwmanage_type
     # a few fields might not be in the domotz device json so we can account for these here to avoid errors
-    try: 
-        modelNumber = domotz_device['user_data']['model']
+    try:
+        modelNumber = domotz_device["user_data"]["model"]
     except KeyError:
         try:
-            modelNumber = domotz_device['model']
+            modelNumber = domotz_device["model"]
         except:
-            modelNumber = ''
-    
-    try:
-        hw_address = domotz_device['hw_address']
-    except:
-        hw_address = ''
+            modelNumber = ""
 
     try:
-        manufacturer_id = vendor_ids[domotz_device['vendor']]
+        hw_address = domotz_device["hw_address"]
     except:
-        manufacturer_id = ''
+        hw_address = ""
 
-    if domotz_device['details']['zone'] != None:
+    try:
+        manufacturer_id = vendor_ids[domotz_device["vendor"]]
+    except:
+        manufacturer_id = ""
+
+    if domotz_device["details"]["zone"] != None:
         try:
             sla = f"{domotz_device['details']['zone']} Device"
         except:
-            sla = ''
+            sla = ""
     else:
-        sla = ''
-    
-    try: 
-        type_id = constants.domotz_type_to_cwmanage_type[domotz_device['user_data']['type']]['id']
+        sla = ""
+
+    try:
+        type_id = constants.domotz_type_to_cwmanage_type[
+            domotz_device["user_data"]["type"]
+        ]["id"]
     except KeyError:
         try:
-            type_id = constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['id']
+            type_id = constants.domotz_type_to_cwmanage_type[
+                domotz_device["type"]["id"]
+            ]["id"]
         except:
             type_id = 55
 
     payload = {
-    "name": f"{domotz_device['display_name']}",
-    "type": {
-        "id": f"{type_id}",
-        # "name": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['name']}"
-    },
-    "status": {
-        "id": 2,
-    },
-    "company": {
-        "id": f"{company_ids[domotz_device['agent_name']]}",
-        "name": f"{domotz_device['agent_name']}"
-    },
-    "modelNumber": f"{modelNumber}",
-    # "installationDate": f"{domotz_device['first_seen_on']}",
-    "macAddress": f"{hw_address}",
-    "ipAddress": f"{domotz_device['ip_addresses'][0]}",
-    "vendor": {
-        "name": f"{domotz_device['vendor']}",
-    },
-    "activeFlag": True,
-    "sla": {
-        "name": f"{sla}"
-    },
-    "displayVendorFlag": True,
-    "showRemoteFlag": True,
-    "showAutomateFlag": True,
-    # "needsRenewalFlag": True,
-    "manufacturer": {
-        "id": manufacturer_id,
-    },
-    "customFields": [
-        {
-            "id": 12,
-            "caption": "Domotz ID",
-            "type": "Number",
-            "entryMethod": "EntryField",
-            "numberOfDecimals": 0,
-            "value": domotz_device['id']
-        }
-    ]
+        "name": f"{domotz_device['display_name']}",
+        "type": {
+            "id": f"{type_id}",
+            # "name": f"{constants.domotz_type_to_cwmanage_type[domotz_device['type']['id']]['name']}"
+        },
+        "status": {
+            "id": 2,
+        },
+        "company": {
+            "id": f"{company_ids[domotz_device['agent_name']]}",
+            "name": f"{domotz_device['agent_name']}",
+        },
+        "modelNumber": f"{modelNumber}",
+        # "installationDate": f"{domotz_device['first_seen_on']}",
+        "macAddress": f"{hw_address}",
+        "ipAddress": f"{domotz_device['ip_addresses'][0]}",
+        "vendor": {
+            "name": f"{domotz_device['vendor']}",
+        },
+        "activeFlag": True,
+        "sla": {"name": f"{sla}"},
+        "displayVendorFlag": True,
+        "showRemoteFlag": True,
+        "showAutomateFlag": True,
+        # "needsRenewalFlag": True,
+        "manufacturer": {
+            "id": manufacturer_id,
+        },
+        "customFields": [
+            {
+                "id": 12,
+                "caption": "Domotz ID",
+                "type": "Number",
+                "entryMethod": "EntryField",
+                "numberOfDecimals": 0,
+                "value": domotz_device["id"],
+            }
+        ],
     }
     try:
-        post_config_response = requests.post(url=f'{constants.cw_manage_url}/company/configurations',headers=constants.headers_cw, json=payload)
+        post_config_response = requests.post(
+            url=f"{constants.cw_manage_url}/company/configurations",
+            headers=constants.headers_cw,
+            json=payload,
+        )
         response_json = post_config_response.json()
-        logging.info(f"CW Manage Configuration Created - ID: {response_json['id']} Based on Domotz Device: (ID: {domotz_device['id']}) - {domotz_device['agent_name']}")
+        logging.info(
+            f"CW Manage Configuration Created - ID: {response_json['id']} Based on Domotz Device: (ID: {domotz_device['id']}) - {domotz_device['agent_name']}"
+        )
     except KeyError as e:
         logging.error("Unable to post Config")
