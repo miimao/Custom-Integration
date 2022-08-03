@@ -135,6 +135,22 @@ def add_domotz_id_to_config(domotz_id, config_id):
     )
     logging.info(f"Configuration:{config_id} - Added the Domotz ID ({domotz_id})")
 
+# Patch a configuration in connectwise
+def patch_config(config_id, path, value):
+    patch_data = [
+        {
+            "op": "replace",
+            "path": f"/{path}",
+            "value": value,
+        }
+    ]
+    config_patch_response = requests.patch(
+        url=f"{constants.cw_manage_url}/company/configurations/{config_id}",
+        headers=constants.headers_cw,
+        data=f"{patch_data}",
+    )
+    logging.info(f"Configuration:{config_id} - Patching: {path} ({value})")
+
 
 # add a configuration to a ticket/s if it does not already have one.
 def add_configuration_to_ticket(ticket):

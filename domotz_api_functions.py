@@ -30,9 +30,10 @@ def get_domotz_device(agent_id, device_id):
     url = constants.domotz_url + f"/agent/{agent_id}/device/{device_id}"
     device = requests.get(url=url, headers=constants.headers_domotz)
     if device.status_code == 404:
-        logging.error(
-            f"unable to find - AgentID: {agent_id}, DeviceID: {device}. Statues Code: {device.status_code}. A 404 Satues Code usualy means this device was deleted."
-        )
+        # logging.error(
+        #     f"unable to find - AgentID: {agent_id}, DeviceID: {device}. Statues Code: {device.status_code}. A 404 Satues Code usualy means this device was deleted."
+        # )
+        return device
     if device.status_code != 200:
         logging.error(
             f"unable to find - AgentID: {agent_id}, DeviceID: {device}. Statues Code: {device.status_code}"

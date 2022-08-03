@@ -16,11 +16,11 @@ logging.basicConfig(
 )
 
 
-# devices = domotz_api_functions.get_nocwconfig_domotz_devices()
-# #Add Devices that do not have a configuration into cw manage
-# logging.info(f"Device Sync Initiated. New Devices Found: {len(devices)}")
-# for device in devices:
-#     cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(device)
+devices = domotz_api_functions.get_nocwconfig_domotz_devices()
+#Add Devices that do not have a configuration into cw manage
+logging.info(f"Device Sync Initiated. New Devices Found: {len(devices)}")
+for device in devices:
+    cwmanage_api_functions.post_domotz_device_to_cwmanage_as_config(device)
 
 
 domotz_agents = domotz_api_functions.get_all_domotz_agents_id()
@@ -28,12 +28,12 @@ domotz_agents = domotz_api_functions.get_all_domotz_agents_id()
 # Look for changes in the CW config and update according to the information we find in Domotz
 configurations = cwmanage_api_functions.get_all_configs_with_domotz_id()
 domotz_devices = domotz_api_functions.get_all_devices()
-# configurations = [cwmanage_api_functions.get_config(1276)]
+
 # Keys translations from CWManage config to Domotz Device json data
 changed_configs = []
 sync_checks = {
     "name": "display_name",
-    "modelNumber": ["model", ["user_data", "model"]],
+    "modelNumber": [["user_data", "model"], "model"],
     # "modelNumber":"model",
     "macAddress": "hw_address",
     "ipAddress": "ip_addresses",
@@ -74,6 +74,19 @@ for config in configurations:
                         ):
                             if config[key] != device[i[0]][i[1]]:
                                 config_changes[key] = device[i[0]][i[1]]
+                            elif config[key] == device[i[0]][i[1]]:
+                                break
+
+        if device == None and config["status"]["id"] != 3:
+            device = domotz_api_functions.get_domotz_device(
+                domotz_agent_id, domotz_device_id
+            )
+            if device != None and device.status_code == 404:
+                logging.info(
+                    f"Unable to find Domotz Device assosicated with CW Configuration:{config['id']} Changing status to inactive"
+                )
+                cwmanage_api_functions.patch_config(config["id"], "status", {"id": 3})
+
     else:
         logging.error(
             f"Device Sync:CW Config:{config['id']} - {config['company']['name']} not found in list of domotz agents"
@@ -83,7 +96,8 @@ for config in configurations:
             f"Device Sync:CW Config:{config['id']} - Changed Detected - DomotzAgent: {domotz_agent_id}, DomotzID: {domotz_device_id}"
         )
         changed_configs.append(config_changes)
-        for i in config_changes:
+        for key in config_changes:
             logging.info(
-                f"Device Sync:CW Config:{config['id']} - {i}: {config[i]}  -->  {config_changes[i]}"
+                f"Device Sync:CW Config:{config['id']} - {key}: {config[key]}  -->  {config_changes[key]}"
             )
+            cwmanage_api_functions.patch_config(config["id"], key, config_changes[key])
