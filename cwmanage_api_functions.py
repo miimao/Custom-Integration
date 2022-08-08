@@ -1,3 +1,4 @@
+from msilib.schema import Error
 from urllib import response
 import requests
 import json
@@ -135,6 +136,22 @@ def add_domotz_id_to_config(domotz_id, config_id):
     )
     logging.info(f"Configuration:{config_id} - Added the Domotz ID ({domotz_id})")
 
+# Patch a configuration Status in connectwise
+def patch_config(config_id, path, value):
+    patch_data = [
+        {
+            "op": "replace",
+            "path": f"/{path}",
+            "value": value,
+        }
+    ]
+    config_patch_response = requests.patch(
+        url=f"{constants.cw_manage_url}/company/configurations/statuses/{config_id}",
+        headers=constants.headers_cw,
+        data=f"{patch_data}",
+    )
+    logging.info(f"Configuration:{config_id} - Patching: {path} ({value})")
+
 # Patch a configuration in connectwise
 def patch_config(config_id, path, value):
     patch_data = [
@@ -155,111 +172,114 @@ def patch_config(config_id, path, value):
 # add a configuration to a ticket/s if it does not already have one.
 def add_configuration_to_ticket(ticket):
     for ticket in ticket:
-        checked_tickets = []
-        ticket_id = ticket["id"]
-        # Sometimes a company name will have a " ' " in its name, we want to get rid of these or they cause errors
-        ticket_company = ticket["company"]["name"].replace("'", "\\'")
-        # Checking to see if we already have a configuration assigned to the ticket.
-        ticket_configurations = requests.get(
-            url=ticket["_info"]["configurations_href"], headers=constants.headers_cw
-        ).json()
-        if ticket_configurations == []:
-            config_set = False
-            config_set_using = None
-            logging.info(
-                f"Ticket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
-            )
-            # Get the initial note so we can parse it for information we can use to find the configuration.
-            try:
-                ticket_note = requests.get(
-                    headers=constants.headers_cw,
-                    url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/allNotes",
-                    params={
-                        "conditions": "noteType='TicketNote'",
-                        "orderBy": "id asc",
-                        "pageSize": "1",
-                        "fields": "text",
-                    },
-                ).json()[0]["text"]
-            except:
-                ticket_note = ""
-            regex_parse = {}
-            try:
-                regex_parse["domotz_id"] = re.search(
-                    regex_domotz_device_id, ticket_note
-                ).group(1)
-            except:
-                regex_parse["domotz_id"] = None
-            try:
-                regex_parse["macAddress"] = re.search(regex_mac, ticket_note).group()
-            except:
-                regex_parse["macAddress"] = None
-            try:
-                regex_parse["ipAddress"] = re.search(regex_ip, ticket_note).group()
-            except:
-                regex_parse["ipAddress"] = None
-            try:
-                regex_parse["name"] = re.search(regex_device_name, ticket_note).group()
-            except:
-                regex_parse["name"] = None
-            for i in regex_parse:
-                if regex_parse[i] != None:
-                    try:
-                        if i == "domotz_id":
-                            configuration_id = requests.get(
-                                headers=constants.headers_cw,
-                                url=f"{constants.cw_manage_url}/company/configurations/",
-                                params={
-                                    "customFieldConditions": f"caption='Domotz ID' AND value={regex_parse[i]}",
-                                    "fields": "id",
-                                },
-                            ).json()
-                        else:
-                            configuration_id = requests.get(
-                                headers=constants.headers_cw,
-                                url=f"{constants.cw_manage_url}/company/configurations/",
-                                params={
-                                    "conditions": f"{i}='{regex_parse[i]}' AND company/name='{ticket_company}'",
-                                    "fields": "id",
-                                },
-                            ).json()
-                        if configuration_id != []:
-                            configuration_id = configuration_id[0]
-                            config_post_response = requests.post(
-                                url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/configurations",
-                                headers=constants.headers_cw,
-                                data=f"{configuration_id}",
-                            )
-                            logging.info(
-                                f"Ticket:{ticket_id} - Set Configuration (ID:{configuration_id['id']}) ({config_post_response.json()['_info']['name']}), Based on: {i} ({regex_parse[i]})"
-                            )
-                            config_set = True
-                            config_set_using = i
-                            break
-                        else:
-                            logging.info(
-                                f"Ticket:{ticket_id} - Unable to find a configuration Based on the {i}: {regex_parse[i]}"
-                            )
-                    except:
-                        logging.warning(
-                            f"An exception occurred. ({i}) Ticket ID {ticket_id}"
-                        )
-                    # add the domotz id to the config if it finds a domotz id for the config
-            if (
-                config_set == True
-                and regex_parse["domotz_id"] != None
-                and config_set_using != "domotz_id"
-            ):
+        if "id" in ticket:
+            checked_tickets = []
+            ticket_id = ticket["id"]
+            # Sometimes a company name will have a " ' " in its name, we want to get rid of these or they cause errors
+            ticket_company = ticket["company"]["name"].replace("'", "\\'")
+            # Checking to see if we already have a configuration assigned to the ticket.
+            ticket_configurations = requests.get(
+                url=ticket["_info"]["configurations_href"], headers=constants.headers_cw
+            ).json()
+            if ticket_configurations == []:
+                config_set = False
+                config_set_using = None
                 logging.info(
-                    f"Ticket:{ticket_id} - Configuration found but not using Domotz ID, Attempting to add the Domotz ID to Configuration."
+                    f"Ticket:{ticket['id']} ({ticket_company}) - No configuration assaigned! Attempting to find one."
                 )
-                add_domotz_id_to_config(
-                    regex_parse["domotz_id"], configuration_id["id"]
+                # Get the initial note so we can parse it for information we can use to find the configuration.
+                try:
+                    ticket_note = requests.get(
+                        headers=constants.headers_cw,
+                        url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/allNotes",
+                        params={
+                            "conditions": "noteType='TicketNote'",
+                            "orderBy": "id asc",
+                            "pageSize": "1",
+                            "fields": "text",
+                        },
+                    ).json()[0]["text"]
+                except:
+                    ticket_note = ""
+                regex_parse = {}
+                try:
+                    regex_parse["domotz_id"] = re.search(
+                        regex_domotz_device_id, ticket_note
+                    ).group(1)
+                except:
+                    regex_parse["domotz_id"] = None
+                try:
+                    regex_parse["macAddress"] = re.search(regex_mac, ticket_note).group()
+                except:
+                    regex_parse["macAddress"] = None
+                try:
+                    regex_parse["ipAddress"] = re.search(regex_ip, ticket_note).group()
+                except:
+                    regex_parse["ipAddress"] = None
+                try:
+                    regex_parse["name"] = re.search(regex_device_name, ticket_note).group()
+                except:
+                    regex_parse["name"] = None
+                for i in regex_parse:
+                    if regex_parse[i] != None:
+                        try:
+                            if i == "domotz_id":
+                                configuration_id = requests.get(
+                                    headers=constants.headers_cw,
+                                    url=f"{constants.cw_manage_url}/company/configurations/",
+                                    params={
+                                        "customFieldConditions": f"caption='Domotz ID' AND value={regex_parse[i]}",
+                                        "fields": "id",
+                                    },
+                                ).json()
+                            else:
+                                configuration_id = requests.get(
+                                    headers=constants.headers_cw,
+                                    url=f"{constants.cw_manage_url}/company/configurations/",
+                                    params={
+                                        "conditions": f"{i}='{regex_parse[i]}' AND company/name='{ticket_company}'",
+                                        "fields": "id",
+                                    },
+                                ).json()
+                            if configuration_id != []:
+                                configuration_id = configuration_id[0]
+                                config_post_response = requests.post(
+                                    url=f"{constants.cw_manage_url}/service/tickets/{ticket_id}/configurations",
+                                    headers=constants.headers_cw,
+                                    data=f"{configuration_id}",
+                                )
+                                logging.info(
+                                    f"Ticket:{ticket_id} - Set Configuration (ID:{configuration_id['id']}) ({config_post_response.json()['_info']['name']}), Based on: {i} ({regex_parse[i]})"
+                                )
+                                config_set = True
+                                config_set_using = i
+                                break
+                            else:
+                                logging.info(
+                                    f"Ticket:{ticket_id} - Unable to find a configuration Based on the {i}: {regex_parse[i]}"
+                                )
+                        except:
+                            logging.warning(
+                                f"An exception occurred. ({i}) Ticket ID {ticket_id}"
+                            )
+                        # add the domotz id to the config if it finds a domotz id for the config
+                if (
+                    config_set == True
+                    and regex_parse["domotz_id"] != None
+                    and config_set_using != "domotz_id"
+                ):
+                    logging.info(
+                        f"Ticket:{ticket_id} - Configuration found but not using Domotz ID, Attempting to add the Domotz ID to Configuration."
+                    )
+                    add_domotz_id_to_config(
+                        regex_parse["domotz_id"], configuration_id["id"]
+                    )
+            else:
+                logging.info(
+                    f"Ticket:{ticket_id} ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})"
                 )
         else:
-            logging.info(
-                f"Ticket:{ticket_id} ({ticket_company}) - is already assigned a configuration. ({ticket_configurations[0]['_info']['name']})"
-            )
+            logging.error(f"Unable to to find 'id' in ticket: {ticket}")
 
 
 # take a domotz device and convert it into json for a post request to cw manage
