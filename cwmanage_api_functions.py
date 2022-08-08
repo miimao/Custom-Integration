@@ -1,5 +1,3 @@
-from msilib.schema import Error
-from urllib import response
 import requests
 import json
 import constants
