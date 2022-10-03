@@ -11,7 +11,10 @@ import cwmanage_api_functions
 def get_all_domotz_agents_id():
     agents_ids = {}
     url = constants.domotz_url + "/agent"
-    agents_info = requests.get(url=url, headers=constants.headers_domotz).json()
+    params = {
+        "page_size" : 50
+    }
+    agents_info = requests.get(url=url, headers=constants.headers_domotz, params=params).json()
     for agent in agents_info:
         agents_ids[agent["display_name"]] = agent["id"]
 
