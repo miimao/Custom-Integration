@@ -1,6 +1,6 @@
-Note: Despite this running in production with minimal hickups I would not recomend others use this project. It was made in freetime to try and leverage the python skills I was still developing and have since decided this could be re writen to be much more effective and resliant to failure.
+Note: Despite this running in production with minimal hiccups I would not recommend others use this project. It was made in free-time to try and leverage the python skills I was still developing and have since decided this could be re written to be much more effective and resistant to failure.
 
-As my first real project im going to keep it up but as an archive and a reminder of humble begings.
+As my first real project I’m going to keep it up but as an archive and a reminder of humble beginnings.
 
 # CTC-Custom-Integration
 Custom Integration for Domotz and ConnectWise Manage.
